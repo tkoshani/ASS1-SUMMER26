@@ -25,11 +25,10 @@ const STORAGE_KEY = "ssp_session_v1";
  * - use regex, not DOM APIs
  */
 function sanitizeUsername(input) {
-  // TODO: implement
-  return "";
-
-  
+  let safe = input.replace(/[^A-Za-z0-9_-]/g, "_");
+  return safe.substring(0, 20);
 }
+  
 
 /**
  * Render the notifications list safely.
@@ -40,9 +39,14 @@ function sanitizeUsername(input) {
  * - MUST use textContent (not innerHTML)
  */
 function renderNotifications(listEl, notifications) {
-  // TODO: implement
-}
+  listEl.innerHTML = "";
 
+  for (let i = 0; i < notifications.length; i++) {
+    const li = document.createElement("li");
+    li.textContent = notifications[i];
+    listEl.appendChild(li);
+  }
+}
 /** -----------------------------
  *  Part B — JSON and parsing
  *  -----------------------------
@@ -62,8 +66,43 @@ function renderNotifications(listEl, notifications) {
  *   - notifications: array of strings
  */
 function parseProfileJson(jsonText) {
-  // TODO: implement
-  return null;
+
+  try {
+
+    const profile = JSON.parse(jsonText);
+
+    if (
+
+      typeof profile.displayName !== "string" ||
+
+      (profile.role !== "user" && profile.role !== "admin") ||
+
+      !Array.isArray(profile.notifications)
+
+    ) {
+
+      return null;
+
+    }
+
+    for (let i = 0; i < profile.notifications.length; i++) {
+
+      if (typeof profile.notifications[i] !== "string") {
+
+        return null;
+
+      }
+
+    }
+
+    return profile;
+
+  } catch (error) {
+
+    return null;
+
+  }
+
 }
 
 /** -----------------------------
@@ -80,8 +119,19 @@ function parseProfileJson(jsonText) {
  * - Return parsed profile object or null
  */
 async function fetchUserProfile(url) {
-  // TODO: implement
-  return null;
+  try {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const text = await response.text();
+
+    return parseProfileJson(text);
+  } catch (error) {
+    return null;
+  }
 }
 
 /** -----------------------------
@@ -99,7 +149,12 @@ async function fetchUserProfile(url) {
  * - Must NOT store notifications (assume those are dynamic)
  */
 function saveSessionToStorage(profile) {
-  // TODO: implement
+  const session = {
+    displayName: profile.displayName,
+    role: profile.role
+  };
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
 }
 
 /**
@@ -109,8 +164,34 @@ function saveSessionToStorage(profile) {
  * - Return object { displayName, role } if valid
  */
 function loadSessionFromStorage() {
-  // TODO: implement
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+
+    if (!data) {
+      return null;
+    }
+
+    const session = JSON.parse(data);
+
+    if (
+
+  typeof session.displayName !== "string" ||
+
+  (session.role !== "user" && session.role !== "admin")
+
+) {
+
   return null;
+
+}
+
+    return {
+      displayName: session.displayName,
+      role: session.role
+    };
+  } catch (error) {
+    return null;
+  }
 }
 
 /** -----------------------------
@@ -128,8 +209,15 @@ function loadSessionFromStorage() {
  * client-side logic can be manipulated; real authorization is server-side.
  */
 function computeAccessStatus(profile) {
-  // TODO: implement
+
+  if (profile && profile.role === "admin") {
+
+    return "GRANTED";
+
+  }
+
   return "DENIED";
+
 }
 
 /** -----------------------------
